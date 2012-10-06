@@ -7,4 +7,5 @@ require './lib/tagger.rb'
 
 input_file = ARGV[0]
 
+tagger = VPNP::POSTagger.new #...
 

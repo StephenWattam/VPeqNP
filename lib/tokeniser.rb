@@ -1,15 +1,16 @@
 require File.join(File.join(File.dirname(__FILE__), 'token.rb'))
 
-class Tokeniser
-  def self.first_token(string)
-    # TODO: return first token
-  end
+module VPNP
+  class Tokeniser
+    def self.first_token(string)
+      # TODO: return first token
+    end
 
-  def self.read_segment(io)
-    # Read until some kind of segment end, like a sentence.
+    def self.read_segment(io)
+      # Read until some kind of segment end, like a sentence.
+    end
   end
 end
-
 
 # This is probably not necessary.
 # def String

@@ -1,6 +1,8 @@
 require 'pstore'
 
-class Corpus
-  def initialize(file)
+module VPNP
+  class Corpus
+    def initialize(file)
+    end
   end
 end

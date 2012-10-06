@@ -1,5 +1,6 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env rub
 
+require File.join(File.join(File.dirname(__FILE__), 'corpus.rb'))
 train = File.open('pos.train.txt', 'r')
 
 assoc = Hash.new
