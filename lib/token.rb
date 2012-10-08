@@ -4,7 +4,7 @@ module VPNP
     # Read-write type
     attr_accessor :type, :source
     # Read string
-    attr_reader :string
+    attr_reader :string, :word
 
     def initialize(string, word, type=nil)
       @word = word
@@ -14,12 +14,12 @@ module VPNP
 
     def lemma
       # TODO Return @string.stem
-      @string
+      @word.downcase
     end
 
     # Write to disk as lemma:type
     def to_s
-      "['#{@string}'(#{lemma}:#{@type})]"
+      "[(#{@word}:#{@type})]"
     end
   end
 end
