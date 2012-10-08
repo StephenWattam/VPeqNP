@@ -11,8 +11,9 @@ module VPNP
     end
   end
 
-  class RegexTokeniser
-    WORD_RX       = /(^|\n)(?<word>\w+)\s+(?<tag>\w+)\s?(\n|$)/   # for word TYPE 
+  class RegexTokeniser < Tokeniser
+    WORD_TAG_RX       = /(^|\n)?(?<start>)(?<word>\w+)\s+(?<tag>\w+)(?<end>)\s?(\n|$)/   # for word TYPE 
+    WORD_RX           = /(?<start>)(?<word>[\w']+)(?<end>)/   # for words, no tag entry
     SEGMENT_RX    = /([\w\s]+)/           # for sentence or word breaks.
     READ_CHUNK    = 512                   # tuned to SEGMENT_RX
 
@@ -28,8 +29,17 @@ module VPNP
     def first_token(string)
       str = string.match(@word)
 
+      # Return if nothing matched.
       return nil, string if not str
-      return Token.new(string[str.begin(:word)..str.end(:tag)], str[:word], str[:tag]), string[str.end(:tag)..-1]
+    
+      # If a create a new item with the data from regex.  :tag is optional.
+      if str.names.include?('tag') then
+        token = Token.new(string[str.begin(:start)..str.end(:end)], str[:word], str[:tag])
+      else
+        token  = Token.new(string[str.begin(:start)..str.end(:end)], str[:word])
+      end
+      # Then return it with a section cut off the original string
+      return token, string[str.end(:end)..-1]
     end
 
     # Read until there is at least one segment in the buffer.
