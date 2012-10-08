@@ -10,11 +10,10 @@ module VPNP
   class SimpleOutputFormatter
 
     def initialize
-      @buffer = ""
     end
 
     def output(token)
-      @buffer += "#{token.string}_#{token.type}"
+      puts "#{token.word}_#{token.type}"
     end
   end
 end

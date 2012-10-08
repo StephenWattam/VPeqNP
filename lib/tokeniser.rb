@@ -12,7 +12,7 @@ module VPNP
   end
 
   class RegexTokeniser
-    WORD_RX       = /(\w+)\s+(\w+)/   # for word TYPE 
+    WORD_RX       = /(^|\n)(?<word>\w+)\s+(?<tag>\w+)\s?(\n|$)/   # for word TYPE 
     SEGMENT_RX    = /([\w\s]+)/           # for sentence or word breaks.
     READ_CHUNK    = 512                   # tuned to SEGMENT_RX
 
@@ -28,8 +28,8 @@ module VPNP
     def first_token(string)
       str = string.match(@word)
 
-      return nil if not str
-      return Token.new(string[str.begin(1)..str.end(2)], str[1], str[2])
+      return nil, string if not str
+      return Token.new(string[str.begin(:word)..str.end(:tag)], str[:word], str[:tag]), string[str.end(:tag)..-1]
     end
 
     # Read until there is at least one segment in the buffer.
@@ -39,7 +39,7 @@ module VPNP
       segment = ""
       
       while( not segment =~ @segment )do
-        return nil if (segment += io.read(@read_chunk)) == '' 
+        return nil if (segment += io.read(@read_chunk) ||'' ) == '' 
       end
 
       return segment

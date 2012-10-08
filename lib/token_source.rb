@@ -7,26 +7,33 @@ module VPNP
 
     # Create with an IO object source and a tokeniser.
     def initialize(sources, tokeniser)
-      @sources    = (sources.is_a?(Array) ? sources : [sources])  # accept an array or a single item
-      @tokeniser  = tokeniser
-      @buffer     = ""
-      @current_file = 0
+      @sources        = (sources.is_a?(Array) ? sources : [sources])  # accept an array or a single item
+      @tokeniser      = tokeniser
+      @buffer         = '' 
+      @current_file   = 0
+      @prev_token     = nil
     end
 
     # Returns the "next" token from the stream
     def next
       # TODO: use tokeniser and buffering to split on the io object
       #
-      while(not (token = @tokeniser.first_token(@buffer))) do
+      token, @buffer = @tokeniser.first_token(@buffer)
+      while(not token) do
+        token, @buffer = @tokeniser.first_token(@buffer)
         return nil if not fill_buffer
       end
 
-      # Consume some buffer
-      @buffer = @buffer[token.string.length..-1]
-
       # Patch up the source entry in token
       # this might be removed later, but could prove handy.
-      token.source = @sources[@current_file]
+      token.source  = @sources[@current_file]
+      token.prev    = @prev_token
+      token.next    = self
+
+      if @prev_token then
+        @prev_token.next  = token
+        @prev_token       = token
+      end
 
       # and return the complete token
       return token
