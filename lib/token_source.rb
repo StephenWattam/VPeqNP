@@ -6,30 +6,55 @@ module VPNP
     attr_reader :source
 
     # Create with an IO object source and a tokeniser.
-    def initialize(source, tokeniser)
-      @source = source
-      @tokeniser = tokeniser
-      @buffer = ""
+    def initialize(sources, tokeniser)
+      @sources    = (sources.is_a?(Array) ? sources : [sources])  # accept an array or a single item
+      @tokeniser  = tokeniser
+      @buffer     = ""
+      @current_file = 0
     end
 
+    # Returns the "next" token from the stream
     def next
       # TODO: use tokeniser and buffering to split on the io object
-      fill_buffer if @tokeniser.sufficient_buffer? buffer
-      @tokeniser.first_pos_token(buffer)
+      #
+      while(not (token = @tokeniser.first_token(@buffer))) do
+        return nil if not fill_buffer
+      end
+
+      # Consume some buffer
+      @buffer = @buffer[token.string.length..-1]
+
+      # Patch up the source entry in token
+      # this might be removed later, but could prove handy.
+      token.source = @sources[@current_file]
+
+      # and return the complete token
+      return token
     end
 
     private
+
+    # Fills the buffer up to whatever tokeniser's segment
     def fill_buffer
-      # TODO: read from io object until tokeniser says it's read enough
-      #  - might be wise to use an array of segments as a buffer, but then
-      #  that doesn't alloow for merging things like lines.
-      buffer += @tokeniser.read_segment(io)
+      # Read from the current file
+      str = @tokeniser.read_segment(@sources[@current_file])
+
+      # If that file returns nothing, try the next one
+      if not str then
+        @current_file += 1
+        return nil if @sources.length < (@current_file + 1)
+        return fill_buffer
+      end
+
+      # Return the string
+      @buffer += str || ''
     end
   end
 
+  # Constructs a token source from a ruby string object.
   def SimpleTokenSource
-    def initialize(string)
-      super(string)
+    def initialize(string, tokeniser)
+      super(StringIO.new(string), tokeniser)
     end
 
   end
