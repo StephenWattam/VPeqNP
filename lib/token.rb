@@ -8,7 +8,7 @@ module VPNP
     attr_writer :next
 
     def initialize(string, word, type=nil)
-      @word = word
+      @word     = word
       @string   = string
       @type     = type
     end

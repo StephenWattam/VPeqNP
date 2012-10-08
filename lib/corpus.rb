@@ -1,9 +1,9 @@
-require 'pstore'
+
+# This is a really unwieldy way of doing things, probably should be changed in the future.
 
 module VPNP
   class Corpus
     def initialize()
-      # FIXME: should use PStore
       @store = Hash.new
 
       # Set up defaults
@@ -12,6 +12,14 @@ module VPNP
       @store[:word_freq]        = {}
       @store[:type_trans_freq]  = {}
       @store[:n]                = 0
+    end
+
+    def self.load(filename)
+      Marshal.load(File.open(filename))
+    end
+      
+    def save(filename)
+      File.write(filename, Marshal.dump(self))
     end
 
     # How many times have we seen this word?
