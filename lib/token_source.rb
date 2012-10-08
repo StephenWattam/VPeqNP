@@ -43,13 +43,13 @@ module VPNP
 
     # Fills the buffer up to whatever tokeniser's segment
     def fill_buffer
+      return nil if @sources.length < (@current_file + 1)
       # Read from the current file
       str = @tokeniser.read_segment(@sources[@current_file])
 
       # If that file returns nothing, try the next one
       if not str then
         @current_file += 1
-        return nil if @sources.length < (@current_file + 1)
         return fill_buffer
       end
 
