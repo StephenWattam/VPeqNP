@@ -1,6 +1,6 @@
 
 
-train = File.open('resources/pos.train.txt', 'r')
+train = File.open('../resources/pos.train.txt', 'r')
 assoc = Hash.new
 
 while (line = train.gets)
@@ -13,7 +13,7 @@ end
 
 train.close
 
-test = File.open('resources/pos.test.txt', 'r')
+test = File.open('../resources/pos.test.txt', 'r')
 
 while (line = test.gets)
   example = line.split
