@@ -33,15 +33,17 @@ model = VPNP::SimpleProbabalisticTagModel.new(c)
 
 success = 0
 count = 0
+
+last = nil
 while(x = ts.next)
-  puts "INPUT: #{x.word}"
-  puts "Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
-  puts "Tags seen: #{c.get_types(x)}"
-  puts "P(this type) = #{model.p_observed_type(x)}"
-  puts "My naive estimate: #{model.naive_estimate_type(x)}"
-  success += 1 if model.naive_estimate_type(x) == x.type
-  puts "My contextual estimate: #{model.context_estimate_type(x)}"
-  out.output(x)
+  puts "\nINPUT: #{x.word}/#{x.string.gsub("\n",'')}/#{x.lemma}"
+  puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
+  puts "  | Tags seen: #{c.get_types(x)}"
+  puts "  | P(this type) = #{model.p_observed_type(x)}"
+  puts "  | My naive estimate: #{model.naive_estimate_type(x)}"
+  success += 1 if model.context_estimate_type(x) == x.type
+  puts "  | My contextual estimate: #{model.context_estimate_type(x)}"
+  puts "  | P(x.type | x.prev.type): #{model.p_type_transition(x.prev, x)}"
   count += 1
 end
 

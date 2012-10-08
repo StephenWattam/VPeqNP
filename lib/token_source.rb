@@ -32,8 +32,8 @@ module VPNP
 
       if @prev_token then
         @prev_token.next  = token
-        @prev_token       = token
       end
+      @prev_token       = token
 
       # and return the complete token
       return token

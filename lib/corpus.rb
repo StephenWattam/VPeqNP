@@ -23,28 +23,28 @@ module VPNP
     # How many times has this type transitioned to another type,
     # rather than simply ending the sentence
     def get_type_trans_freq(token)
-      lemma = token.is_a?(Token)? token.lemma : token
-      type_trans_frequencies[lemma] || 0
+      type = token.is_a?(Token)? token.type : token
+      type_trans_frequencies[type] || 0
     end
 
     def get_total
       n
     end
 
-    # What have we seen this word transition to?
+    # What have we seen this type transition to?
     def get_transitions(token)
-      lemma = token.is_a?(Token)? token.lemma : token
-      transitions[lemma] || {}
+      type = token.is_a?(Token)? token.type : token
+      transitions[type] || {}
     end
 
     # A count of how many times this token has transitioned to the one
     # set in ".next"
-    def get_transition_count(token, type=nil)
-      raise "Cannot predict no transition" if not (token.next or type)
-      type = token.next.lemma if not type
+    def get_transition_count(from, to)
+      from = from.is_a?(Token)? from.type  : from
+      to   = to.is_a?(Token)? to.type       : to
 
-      return 0 if not transitions[token.lemma]
-      transitions[token.lemma][type] || 0
+      return 0 if not transitions[from]
+      transitions[from][to] || 0
     end
 
     # What types has this been?
@@ -102,8 +102,8 @@ module VPNP
       if token.next then
         # Add to the count of times this word has been used in
         # a valid transition
-        type_trans_frequencies[word] ||= 0
-        type_trans_frequencies[word]  += 1
+        type_trans_frequencies[type] ||= 0
+        type_trans_frequencies[type]  += 1
         
 
         # Add to the transition matrix
