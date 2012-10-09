@@ -43,26 +43,28 @@ c = VPNP::Corpus.load("./testing/test_corpus")
 ts = VPNP::TokenSource.new(brown_testing, tz)
 
 # Create a new model
-model = VPNP::SimpleProbabalisticTagModel.new(c)
+simple = VPNP::SimpleProbabalisticTagModel.new(c)
+hmm    = VPNP::MarkovTagModel.new(c)
 
 
 # quick counts
 success = 0
 count = 0
 while(x = ts.next)
+  original_type = x.type
 
   # overly verbose debug info
   puts "\nINPUT: #{x.word} || #{x.string.gsub("\n",'')} || #{x.lemma}"
   puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
   puts "  | Tags seen: #{c.get_types(x)}"
-  puts "  | P(this type) = #{model.p_observed_type(x)}"
-  puts "  | My naive estimate: #{model.naive_estimate_type(x)}"
-  puts "  | My contextual estimate: #{model.context_estimate_type(x)}"
-  puts "  | P(x.type | x.prev.type) = P(#{x.type}|#{(x.prev)? x.prev.type : '?'}): #{model.p_type_transition(x.prev, x)}"
-  
+  puts "  | P(this type) = #{simple.p_observed_type(x)}"
+  # puts "  | My naive estimate: #{simple.estimate_type(x)}"
+  puts "  | My estimate: #{hmm.estimate_type(x)}"
+  puts "  | P(x.type | x.prev.type) = P(#{x.type}|#{(x.prev)? x.prev.type : '?'}): #{hmm.p_type_transition(x.prev, x)}"
+
   # Accounting
   count += 1
-  success += 1 if model.context_estimate_type(x) == x.type
+  success += 1 if original_type == x.type
 end
 
 

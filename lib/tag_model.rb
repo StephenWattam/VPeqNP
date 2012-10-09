@@ -13,15 +13,6 @@ module VPNP
   end
 
   class SimpleProbabalisticTagModel < TagModel
-    # Adjusts conditional probability to weight the
-    # transition (type -> type) rather than 
-    # naive (word == type) probabilities.
-    #
-    # Essentially, this is how much to trust grammar over lexicon.
-    # Bump it up for small representative corpora, and down for large
-    # grammatically messy ones.
-    MIN_DENOMINATOR = 1
-
     # Return the probability of observing the type that has actually been observed
     def p_observed_type(token)
       p_type(token, token.type)
@@ -38,11 +29,16 @@ module VPNP
     end
 
     # Estimate type naively
-    def naive_estimate_type(token)
+    def estimate_type(token)
       types = @corpus.get_types(token)
       return nil if types.length == 0
-      return types.keys[types.values.index(types.values.max)]
+      token.type = types.keys[types.values.index(types.values.max)]
+      return token
     end
+
+  end
+
+  class MarkovTagModel < SimpleProbabalisticTagModel
 
     # Probability of seeing type x then type y
     def p_type_transition(from, to)
@@ -58,10 +54,9 @@ module VPNP
     end
 
 
-
     # Estimate type using token transitions
-    def context_estimate_type(token)
-      return if not (token.prev and token.prev.type)    # We require knowledge of the previous token's type.
+    def estimate_type(token)
+      return nil if not (token.prev and token.prev.type)    # We require knowledge of the previous token's type.
 
       
       # For each of the possible transitions from the previous tag,
@@ -104,9 +99,13 @@ module VPNP
         # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
       }
 
-      return max
+      token.type = max
+      return token
 
     end
 
+
+
   end
+
 end
