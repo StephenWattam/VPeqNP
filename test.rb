@@ -20,52 +20,75 @@ tz = VPNP::RegexTokeniser.new(WORD_TAG_BROWN) # word tag word tag word tag
 
 # -----------------------------------------------------------------------------
 # Training
-# ts = VPNP::TokenSource.new(File.open('./resources/pos.train.txt'), tz)
-ts = VPNP::TokenSource.new(brown_training, tz)
+#ts = VPNP::TokenSource.new(File.open('./resources/pos.train.txt'), tz)
+#ts = VPNP::TokenSource.new(brown_training, tz)
 
 # x = ts.next
 # while(x = ts.next)
 #   # out.output(x)
 # end
 
-c = VPNP::Corpus.new
-c.add_all(ts)
+#c = VPNP::Corpus.new
+#c.add_all(ts)
 
 # -----------------------------------------------------------------------------
 # Save and load the corpus
-c.save("./testing/test_corpus")
+#c.save("./testing/test_corpus")
 c = VPNP::Corpus.load("./testing/test_corpus")
 
 # -----------------------------------------------------------------------------
 # Testing
-# tz = VPNP::RegexTokeniser.new(VPNP::RegexTokeniser::WORD_RX)  # Word regex, no tags
-# ts = VPNP::TokenSource.new(File.open('./resources/pos.test.txt'), tz)
+#tz = VPNP::RegexTokeniser.new(VPNP::RegexTokeniser::WORD_RX)  # Word regex, no tags
+#ts = VPNP::TokenSource.new(File.open('./resources/pos.test.txt'), tz)
 ts = VPNP::TokenSource.new(brown_testing, tz)
+
+dumbrules = VPNP::RuleSet.new
+dumbrules.add_rule(lambda {|token, type, p| 
+#                puts "Word: #{token.string} Type: #{type} Prob: #{p}"
+                if token.string[0] == token.string.upcase[0]
+                    if type == "np"
+                      return p*5
+                    else
+                      return p*0.1
+                    end
+                else
+                  return p
+                end
+              })
 
 # Create a new model
 simple = VPNP::SimpleProbabalisticTagModel.new(c)
-hmm    = VPNP::MarkovTagModel.new(c)
+simpleruled = VPNP::SimpleProbabalisticTagModel.new(c, dumbrules)
+#hmm    = VPNP::MarkovTagModel.new(c, dumbrules)
 
 
-# quick counts
-success = 0
-count = 0
-while(x = ts.next)
-  original_type = x.type
+def testmodel(tm, ts)
+  # quick counts
+  success = 0
+  count = 0
+  while(x = ts.next)
+    original_type = x.type
 
-  # overly verbose debug info
-  puts "\nINPUT: #{x.word} || #{x.string.gsub("\n",'')} || #{x.lemma}"
-  puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
-  puts "  | Tags seen: #{c.get_types(x)}"
-  puts "  | P(this type) = #{simple.p_observed_type(x)}"
-  # puts "  | My naive estimate: #{simple.estimate_type(x)}"
-  puts "  | My estimate: #{hmm.estimate_type(x)}"
-  puts "  | P(x.type | x.prev.type) = P(#{x.type}|#{(x.prev)? x.prev.type : '?'}): #{hmm.p_type_transition(x.prev, x)}"
+    tm.estimate_type(x)
+    # overly verbose debug info
+#    puts "\nINPUT: #{x.word} || #{x.string.gsub("\n",'')} || #{x.lemma}"
+ #   puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
+  #  puts "  | Tags seen: #{c.get_types(x)}"
+   # puts "  | P(this type) = #{tm.p_observed_type(x)}"
+    #puts "  | My naive estimate: #{tm.estimate_type(x)}"
+    #puts "  | P(x.type | x.prev.type) = P(#{x.type}|#{(x.prev)? x.prev.type : '?'}): #{tm.p_type_transition(x.prev, x)}"
+  #
+    # Accounting
+    count += 1
+    success += 1 if original_type == x.type
+  end
 
-  # Accounting
-  count += 1
-  success += 1 if original_type == x.type
+
+  puts "SUCCESS: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
 end
 
+#testmodel(simple, ts)
+#ts = VPNP::TokenSource.new(brown_testing, tz)
+testmodel(simpleruled, ts)
 
-puts "SUCCESS: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
+

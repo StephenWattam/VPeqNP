@@ -2,9 +2,39 @@ require File.join(File.join(File.dirname(__FILE__), 'token.rb'))
 require File.join(File.join(File.dirname(__FILE__), 'corpus.rb'))
 
 module VPNP
+
+  class RuleSet
+
+    def initialize
+      @rulelist = []
+    end
+
+    def add_rule(method)
+      @rulelist.push(method) 
+    end
+
+    
+    def weight_types(token, types)
+      newprobs = types.map{ |type, p|
+        apply_rules(token, type, p) 
+      }
+      return Hash[types.keys.zip(newprobs)]
+    end
+
+    def apply_rules(token, type, p)
+      weighted_p = p
+      @rulelist.each { |rule| 
+          weighted_p = rule.call(token, type, p)
+      }
+      return weighted_p
+    end
+  end
+
+
   class TagModel
-    def initialize(corpus)
+    def initialize(corpus, ruleset=nil)
       @corpus = corpus
+      @ruleset = ruleset if ruleset && ruleset.is_a?(RuleSet)
     end
 
     def estimate_type(token)
@@ -32,6 +62,7 @@ module VPNP
     def estimate_type(token)
       types = @corpus.get_types(token)
       return nil if types.length == 0
+      types = @ruleset.weight_types(token, types) if @ruleset
       token.type = types.keys[types.values.index(types.values.max)]
       return token
     end
@@ -88,18 +119,24 @@ module VPNP
 
       # Now multiply each transition with the probability that the word
       # is natively of that type
-      type_probabilities = {}
+      
+
+      #type_probabilities = {}
       max = nil
       transition_probabilities.each{|type, p|
         transition_probabilities[type] *= p_type(token, type)
-        
         if (not max) or (transition_probabilities[type] > transition_probabilities[max]) then
           max = type
         end
-        # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
+      # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
       }
-
       token.type = max
+
+      if @ruleset  
+        types = transition_probabilities
+        types = @ruleset.weight_types(token, types) 
+        token.type = types.keys[types.values.index(types.values.max)]          
+      end 
       return token
 
     end

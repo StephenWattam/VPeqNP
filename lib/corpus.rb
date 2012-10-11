@@ -110,6 +110,8 @@ module VPNP
       if token.next then
         # Add to the count of times this word has been used in
         # a valid transition
+        # Matt: How is 'this word' counted here? Surely it's
+        # count regarding the type?
         type_trans_frequencies[type] ||= 0
         type_trans_frequencies[type]  += 1
         
