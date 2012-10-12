@@ -61,6 +61,11 @@ simple        = VPNP::SimpleProbabalisticTagModel.new (c)
 simpleruled   = VPNP::SimpleProbabalisticTagModel.new (c)
 hmm           = VPNP::MarkovTagModel.new              (c)
 beff          = VPNP::BestEffortTagModel.new          (c)
+morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
+                                                       /.*ing$/ => 'vb',
+                                                       /^a[nt]$/ => 'at',
+                                                       /^th(e(re)?|a[nt])$/ => 'at'
+                                                      } )
 
 
 def test_model(c, tm, ts)
@@ -89,8 +94,8 @@ def test_model(c, tm, ts)
   puts "#{tm.class}: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
 end
 
-test_model(c, beff, ts)
+test_model(c, morph, ts)
 
 msg = "This is a green sample message that remains untagged and enjoys eating horse flesh out of an elevator."
 puts msg
-puts msg.tag( beff, out )
+puts msg.tag( morph, out )

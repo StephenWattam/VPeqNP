@@ -48,8 +48,9 @@ module VPNP
 
     # Actually tag the token.
     def estimate_type(token)
-      types = estimates(token)
-      token.type = types.keys[types.values.index(types.values.max)]
+      types       = estimates(token)
+      return token if types.length == 0
+      token.type  = types.keys[types.values.index(types.values.max)]
       return token
     end
   end
@@ -147,10 +148,41 @@ module VPNP
       return transition_probabilities
 
     end
-
-
-
   end
+
+
+
+  class MorphologicalRuleTagModel < TagModel
+    # Rules should be of the form /regex/ => 'type'
+    def initialize(rules = {})
+      @rules = rules
+    end
+
+    def estimates(token)
+      # Keep track of number of RXs that fit
+      fits  = 0
+      types = {}
+
+      @rules.each{|rx, type|
+        if token.word =~ rx then
+          types[type] ||= 0
+          types[type]  += 1 
+          fits         += 1
+        end
+      }
+
+      # Don't div by zero
+      return {} if fits == 0
+
+      # And return the list of types.
+      types.each{|type, score|
+        score = (score.to_f / fits)
+      }
+
+      return types
+    end
+  end
+
 
 
   # Combines, logically, the taggers above in order to work
