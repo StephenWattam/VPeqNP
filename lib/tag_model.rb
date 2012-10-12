@@ -9,11 +9,13 @@ module VPNP
       @rulelist = []
     end
 
+    #Adds a rule.
     def add_rule(method)
       @rulelist.push(method) 
     end
 
-    
+    #Weights all the passed types for the given token according to the 
+    #stored ruleset.
     def weight_types(token, types)
       newprobs = types.map{ |type, p|
         apply_rules(token, type, p) 
@@ -21,10 +23,12 @@ module VPNP
       return Hash[types.keys.zip(newprobs)]
     end
 
+    #Apply all the rules to the probability of the token-type mapping
+    #Return the new probability.
     def apply_rules(token, type, p)
       weighted_p = p
       @rulelist.each { |rule| 
-          weighted_p = rule.call(token, type, p)
+          weighted_p = rule.call(token, type, weighted_p)
       }
       return weighted_p
     end
