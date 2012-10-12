@@ -79,10 +79,8 @@ module VPNP
     # ------- end of querying api ------------------------
     
     
-
-    # Add everything from a given source.
-    def add_all(token_source)
-      while(x = token_source.next) do
+    def add_all(ts)
+      while(x = ts.next) do
         add(x)
       end
     end

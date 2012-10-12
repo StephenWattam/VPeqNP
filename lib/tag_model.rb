@@ -3,47 +3,25 @@ require File.join(File.join(File.dirname(__FILE__), 'corpus.rb'))
 
 module VPNP
 
-  # class RuleSet
-
-  #   def initialize
-  #     @rulelist = []
-  #   end
-
-  #   #Adds a rule.
-  #   def add_rule(method)
-  #     @rulelist.push(method) 
-  #   end
-
-  #   #Weights all the passed types for the given token according to the 
-  #   #stored ruleset.
-  #   def weight_types(token, types)
-  #     newprobs = types.map{ |type, p|
-  #       apply_rules(token, type, p) 
-  #     }
-  #     return Hash[types.keys.zip(newprobs)]
-  #   end
-
-  #   #Apply all the rules to the probability of the token-type mapping
-  #   #Return the new probability.
-  #   def apply_rules(token, type, p)
-  #     weighted_p = p
-  #     @rulelist.each { |rule| 
-  #         weighted_p = rule.call(token, type, weighted_p)
-  #     }
-  #     return weighted_p
-  #   end
-  # end
-
-
   class TagModel
     def initialize(corpus)
       @corpus   = corpus
-      # @ruleset  = ruleset if ruleset && ruleset.is_a?(RuleSet)
     end
 
     # Output a {'type' => probability} hash
     def estimates(token)
       return {}
+    end
+
+    #Evaluate the model against a 
+    def evaluate(test)
+      return 0 if !test.is_a?(TokenSource)
+      success, count  = 0, 0
+      while(x = test.next)
+        count += 1
+        success += 1 if x.type = self.estimates(x).values.max
+      end
+      return count > 0 ? (success.to_f/count)*100 : 0
     end
 
     # Actually tag the token.
@@ -54,6 +32,7 @@ module VPNP
       return token
     end
   end
+
 
   class SimpleProbabalisticTagModel < TagModel
     # Return the probability of observing the type that has actually been observed
@@ -82,6 +61,7 @@ module VPNP
     end
 
   end
+
 
   class MarkovTagModel < SimpleProbabalisticTagModel
 
@@ -129,7 +109,6 @@ module VPNP
       #   transition_probabilities[type] = 1 if not transition_probabilities[type]
       # }
 
-
       # Now multiply each transition with the probability that the word
       # is natively of that type
       
@@ -139,12 +118,6 @@ module VPNP
         transition_probabilities[type] *= p_type(token, type)
         # puts "P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
       }
-# 
-#       if @ruleset  
-#         types = transition_probabilities
-#         types = @ruleset.weight_types(token, types) 
-#         token.type = types.keys[types.values.index(types.values.max)]          
-#       end 
       return transition_probabilities
 
     end

@@ -69,4 +69,17 @@ module VPNP
       super(StringIO.new(string), tokeniser)
     end
   end
+
+
+  # Constructs a token source from a globbable path string and bounds.
+  class DirTokenSource < TokenSource
+    def initialize(path, index, limit, tokeniser)
+      f_list = Dir.glob(path)
+      f_list.map!{|x| File.open(x)}
+      limit = f_list.length   if limit > f_list.length 
+      index = 0 if index > limit
+      super(f_list[index..limit], tokeniser)
+    end
+  end
+    
 end
