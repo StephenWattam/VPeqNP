@@ -1,5 +1,6 @@
 require File.join(File.join(File.dirname(__FILE__), 'token.rb'))
 require File.join(File.join(File.dirname(__FILE__), 'tokeniser.rb'))
+require 'stringio'
 
 module VPNP
   class TokenSource
@@ -12,6 +13,9 @@ module VPNP
       @buffer         = '' 
       @current_file   = 0
       @prev_token     = nil
+
+      # Check it's possible to actually work with the input...
+      # @sources.map{|s| raise "Source #{s} is not of type IO." if not s.is_a? IO }
     end
 
     # Returns the "next" token from the stream
@@ -21,7 +25,9 @@ module VPNP
       token, @buffer = @tokeniser.first_token(@buffer)
       while(not token) do
         token, @buffer = @tokeniser.first_token(@buffer)
-        return nil if not fill_buffer
+        if not token then
+          return nil if not fill_buffer
+        end
       end
 
       # Patch up the source entry in token
@@ -30,9 +36,8 @@ module VPNP
       token.prev    = @prev_token
       token.next    = self
 
-      if @prev_token then
-        @prev_token.next  = token
-      end
+      # Load token into previous/next 
+      @prev_token.next  = token if @prev_token 
       @prev_token       = token
 
       # and return the complete token
@@ -59,10 +64,9 @@ module VPNP
   end
 
   # Constructs a token source from a ruby string object.
-  def SimpleTokenSource
+  class SimpleTokenSource < TokenSource
     def initialize(string, tokeniser)
       super(StringIO.new(string), tokeniser)
     end
-
   end
 end

@@ -57,12 +57,13 @@ dumbrules.add_rule(lambda {|token, type, p|
               })
 
 # Create a new model
-simple = VPNP::SimpleProbabalisticTagModel.new(c)
-simpleruled = VPNP::SimpleProbabalisticTagModel.new(c, dumbrules)
-#hmm    = VPNP::MarkovTagModel.new(c, dumbrules)
+simple        = VPNP::SimpleProbabalisticTagModel.new(c)
+simpleruled   = VPNP::SimpleProbabalisticTagModel.new(c, dumbrules)
+hmm           = VPNP::MarkovTagModel.new(c, dumbrules)
+beff          = VPNP::BestEffortTagModel.new(c, dumbrules)
 
 
-def testmodel(tm, ts)
+def test_model(tm, ts)
   # quick counts
   success = 0
   count = 0
@@ -84,11 +85,11 @@ def testmodel(tm, ts)
   end
 
 
-  puts "SUCCESS: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
+  puts "#{tm.class}: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
 end
 
-#testmodel(simple, ts)
-#ts = VPNP::TokenSource.new(brown_testing, tz)
-testmodel(simpleruled, ts)
+# test_model(simpleruled, ts)
 
-
+msg = "This is a green sample message that remains untagged and enjoys eating horse flesh out of an elevator."
+puts msg
+puts msg.tag( beff, out )

@@ -13,7 +13,7 @@ module VPNP
     end
 
     def output(token)
-      puts "#{token.word}_#{token.type}"
+      return "#{token.word}_#{token.type} "
     end
   end
 end

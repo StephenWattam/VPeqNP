@@ -132,7 +132,7 @@ module VPNP
         if (not max) or (transition_probabilities[type] > transition_probabilities[max]) then
           max = type
         end
-      # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
+        # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
       }
       token.type = max
 
@@ -147,6 +147,32 @@ module VPNP
 
 
 
+  end
+
+
+  # Combines, logically, the taggers above in order to work
+  # for tagged and untagged text with the maximum intelligence.
+  #
+  # This is, in effect, a happy workaround for the fact that
+  # transition-based models cannot work without some notion of
+  # text ordering (.prev/.next) and pure observation models suck.
+  class BestEffortTagModel < TagModel
+    def initialize(corpus, rules)
+      super(corpus, rules)
+
+      # Create one of each of the semi-decent models
+      @prob   = SimpleProbabalisticTagModel.new(@corpus, @ruleset)
+      @hmm    = MarkovTagModel.new(@corpus, @ruleset)
+    end
+
+    # Refine me as better systems abound.
+    def estimate_type(token)
+      if not token.prev or not token.prev.type then
+        @prob.estimate_type(token)
+      else
+        @hmm.estimate_type(token)
+      end
+    end
   end
 
 end
