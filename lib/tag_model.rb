@@ -3,46 +3,54 @@ require File.join(File.join(File.dirname(__FILE__), 'corpus.rb'))
 
 module VPNP
 
-  class RuleSet
+  # class RuleSet
 
-    def initialize
-      @rulelist = []
-    end
+  #   def initialize
+  #     @rulelist = []
+  #   end
 
-    #Adds a rule.
-    def add_rule(method)
-      @rulelist.push(method) 
-    end
+  #   #Adds a rule.
+  #   def add_rule(method)
+  #     @rulelist.push(method) 
+  #   end
 
-    #Weights all the passed types for the given token according to the 
-    #stored ruleset.
-    def weight_types(token, types)
-      newprobs = types.map{ |type, p|
-        apply_rules(token, type, p) 
-      }
-      return Hash[types.keys.zip(newprobs)]
-    end
+  #   #Weights all the passed types for the given token according to the 
+  #   #stored ruleset.
+  #   def weight_types(token, types)
+  #     newprobs = types.map{ |type, p|
+  #       apply_rules(token, type, p) 
+  #     }
+  #     return Hash[types.keys.zip(newprobs)]
+  #   end
 
-    #Apply all the rules to the probability of the token-type mapping
-    #Return the new probability.
-    def apply_rules(token, type, p)
-      weighted_p = p
-      @rulelist.each { |rule| 
-          weighted_p = rule.call(token, type, weighted_p)
-      }
-      return weighted_p
-    end
-  end
+  #   #Apply all the rules to the probability of the token-type mapping
+  #   #Return the new probability.
+  #   def apply_rules(token, type, p)
+  #     weighted_p = p
+  #     @rulelist.each { |rule| 
+  #         weighted_p = rule.call(token, type, weighted_p)
+  #     }
+  #     return weighted_p
+  #   end
+  # end
 
 
   class TagModel
-    def initialize(corpus, ruleset=nil)
-      @corpus = corpus
-      @ruleset = ruleset if ruleset && ruleset.is_a?(RuleSet)
+    def initialize(corpus)
+      @corpus   = corpus
+      # @ruleset  = ruleset if ruleset && ruleset.is_a?(RuleSet)
     end
 
+    # Output a {'type' => probability} hash
+    def estimates(token)
+      return {}
+    end
+
+    # Actually tag the token.
     def estimate_type(token)
-      $stderr.puts "STUB: Override me: VPNP::TagModel::estimate_type"
+      types = estimates(token)
+      token.type = types.keys[types.values.index(types.values.max)]
+      return token
     end
   end
 
@@ -63,12 +71,13 @@ module VPNP
     end
 
     # Estimate type naively
-    def estimate_type(token)
+    def estimates(token)
       types = @corpus.get_types(token)
-      return nil if types.length == 0
-      types = @ruleset.weight_types(token, types) if @ruleset
-      token.type = types.keys[types.values.index(types.values.max)]
-      return token
+      return {} if types.length == 0
+      types.each{|type, count|
+        count = p_type(token, type)
+      }
+      return types
     end
 
   end
@@ -90,9 +99,8 @@ module VPNP
 
 
     # Estimate type using token transitions
-    def estimate_type(token)
-      return nil if not (token.prev and token.prev.type)    # We require knowledge of the previous token's type.
-
+    def estimates(token)
+      return {} if not (token.prev and token.prev.type)    # We require knowledge of the previous token's type.
       
       # For each of the possible transitions from the previous tag,
       # work out the probability that the transition was made
@@ -126,22 +134,17 @@ module VPNP
       
 
       #type_probabilities = {}
-      max = nil
       transition_probabilities.each{|type, p|
         transition_probabilities[type] *= p_type(token, type)
-        if (not max) or (transition_probabilities[type] > transition_probabilities[max]) then
-          max = type
-        end
-        # puts "[#{max}] P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
+        # puts "P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
       }
-      token.type = max
-
-      if @ruleset  
-        types = transition_probabilities
-        types = @ruleset.weight_types(token, types) 
-        token.type = types.keys[types.values.index(types.values.max)]          
-      end 
-      return token
+# 
+#       if @ruleset  
+#         types = transition_probabilities
+#         types = @ruleset.weight_types(token, types) 
+#         token.type = types.keys[types.values.index(types.values.max)]          
+#       end 
+      return transition_probabilities
 
     end
 
@@ -157,22 +160,22 @@ module VPNP
   # transition-based models cannot work without some notion of
   # text ordering (.prev/.next) and pure observation models suck.
   class BestEffortTagModel < TagModel
-    def initialize(corpus, rules)
-      super(corpus, rules)
+    def initialize(corpus) 
+      super(corpus)
 
       # Create one of each of the semi-decent models
-      @prob   = SimpleProbabalisticTagModel.new(@corpus, @ruleset)
-      @hmm    = MarkovTagModel.new(@corpus, @ruleset)
+      @prob   = SimpleProbabalisticTagModel.new(@corpus)
+      @hmm    = MarkovTagModel.new(@corpus)
     end
 
-    # Refine me as better systems abound.
-    def estimate_type(token)
+    def estimates(token)
       if not token.prev or not token.prev.type then
-        @prob.estimate_type(token)
+        @prob.estimates(token)
       else
-        @hmm.estimate_type(token)
+        @hmm.estimates(token)
       end
     end
+
   end
 
 end
