@@ -76,7 +76,7 @@ module VPNP
       types = @corpus.get_types(token)
       return {} if types.length == 0
       types.each{|type, count|
-        count = p_type(token, type)
+        types[type] = p_type(token, type)
       }
       return types
     end
@@ -158,6 +158,22 @@ module VPNP
       @rules = rules
     end
 
+    # Load rules from a file of the format
+    #
+    # ---
+    # key:value
+    # key:value
+    #
+    # i.e. normal YAML
+    def self.load_rules(filename)
+      require 'yaml'
+      rules = YAML.load(File.read(filename))
+      rules.map{|k, v|
+        k = Regex.new(k)
+      }
+      return self.new(rules)
+    end
+
     def estimates(token)
       # Keep track of number of RXs that fit
       fits  = 0
@@ -176,7 +192,7 @@ module VPNP
 
       # And return the list of types.
       types.each{|type, score|
-        score = (score.to_f / fits)
+        types[type] = (score.to_f / fits)
       }
 
       return types

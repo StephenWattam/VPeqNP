@@ -63,6 +63,7 @@ hmm           = VPNP::MarkovTagModel.new              (c)
 beff          = VPNP::BestEffortTagModel.new          (c)
 morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
                                                        /.*ing$/ => 'vb',
+                                                       /a/ => 'at2',
                                                        /^a[nt]$/ => 'at',
                                                        /^th(e(re)?|a[nt])$/ => 'at'
                                                       } )
