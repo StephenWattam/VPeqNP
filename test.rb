@@ -76,10 +76,13 @@ def test_model(c, tm, ts)
   while(x = ts.next)
     original_type = x.type
 
+    # Simulate reading untagged input
+    x.type = nil
+
     tm.estimate_type(x)
     # overly verbose debug info
     puts "\nINPUT: #{x.word} || #{x.string.gsub("\n",'')} || #{x.lemma}"
-    puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x)} seen as type #{x.type}"
+    puts "  | Times seen: #{c.get_word_freq(x)} / #{c.get_total}, #{c.get_type_count(x, original_type)} seen as type #{original_type}"
     puts "  | Tags seen: #{c.get_types(x)}"
     # puts "  | P(this type) = #{tm.p_observed_type(x)}"
     puts "  | Weights: #{tm.estimates(x)}"
@@ -94,6 +97,7 @@ def test_model(c, tm, ts)
 
   puts "#{tm.class}: #{success}/#{count} (#{((success.to_f/count)*100).round(2)}%)"
 end
+
 
 test_model(c, morph, ts)
 
