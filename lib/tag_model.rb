@@ -139,11 +139,11 @@ module VPNP
     # key:value
     #
     # i.e. normal YAML
-    def self.load_rules(filename)
+    def self.load(filename)
       require 'yaml'
-      rules = YAML.load(File.read(filename))
-      rules.map{|k, v|
-        k = Regex.new(k)
+      rules = {}
+      YAML.load(File.read(filename)).map{|k, v|
+        rules[Regexp.new(k)] = v
       }
       return self.new(rules)
     end

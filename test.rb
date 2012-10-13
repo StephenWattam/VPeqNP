@@ -30,12 +30,13 @@ c = VPNP::Corpus.load("./testing/test_corpus")
 simple        = VPNP::SimpleProbabalisticTagModel.new (c)
 hmm           = VPNP::MarkovTagModel.new              (c)
 beff          = VPNP::BestEffortTagModel.new          (c)
-morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
-                                                       /.*ing$/ => 'vb',
-                                                       /a/ => 'at2',
-                                                       /^a[nt]$/ => 'at',
-                                                       /^th(e(re)?|a[nt])$/ => 'at'
-                                                      } )
+morph         = VPNP::MorphologicalRuleTagModel.load('./testing/test_rules.yml')
+# morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
+#                                                        /.*ing$/ => 'vb',
+#                                                        /a/ => 'at2',
+#                                                        /^a[nt]$/ => 'at',
+#                                                        /^th(e(re)?|a[nt])$/ => 'at'
+#                                                       } )
 
 # -----------------------------------------------------------------------------
 # Testing
