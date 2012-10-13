@@ -49,12 +49,42 @@ hybr          = VPNP::SimpleHybridModel.new(c,rules)
 # -----------------------------------------------------------------------------
 # Testing
 # XXX: The input source gets 'used up' by the tokensource - I couldn't see what 
-# caused this to add a 'reset' in the TokenSource.
+# caused this to add a 'reset' in the TokenSource. 
+#  --- It's part of the IO system (file pointer).  Multiple files makes this hard.
+#      I'll work on it later - SW 13-10-12
+
+def summary(t, tm)
+  t = t.next if t.is_a? VPNP::TokenSource
+
+  # Keep count and progress through tokens.
+  n, s, c = 0, 0, 0
+  while(t) do
+
+    # Make a note of, and wipe, the type assigmnent
+    original = t.type
+    t.type = nil
+
+    # Estimate type
+    tm.estimate_type(t)
+
+    # Check and count
+    s += 1 if t.type == original
+    n += 1 if t.type 
+    c += 1
+
+    # Progress to next token
+    t = t.next
+  end
+
+  puts "\nModel: #{tm.class}"
+  puts "Tokens: #{n}/#{s}/#{c} (#{((n.to_f/c)*100).round(2)}/#{((s.to_f/c)*100).round(2)}%) [tagged/correct/total]"
+end
+
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
-puts "BEFF: #{beff.evaluate(ts).round(2)}%"
+summary(ts, beff)
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
-puts "Simple: #{simple.evaluate(ts).round(2)}%"
+summary(ts, simple)
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
-puts "Morph: #{morph.evaluate(ts).round(2)}%"
+summary(ts, hmm)
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
-puts "Hybr: #{hybr.evaluate(ts).round(2)}%"
+summary(ts, morph)

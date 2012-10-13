@@ -14,15 +14,15 @@ module VPNP
     end
 
     #Evaluate the model against a 
-    def evaluate(test)
-      return 0 if !test.is_a?(TokenSource)
-      success, count  = 0, 0
-      while(x = test.next)
-        count += 1
-        types = self.estimates(x)
-        success += 1 if types.length > 0 && x.type == types.keys[types.values.index(types.values.max)]
+    def estimate_chain(token)
+      # Whilst token.next, continue.
+      while(token)
+        estimate_type(token)
+        token = token.next
       end
-      return count > 0 ? (success.to_f/count)*100 : 0
+
+      # return the last token in the chain.
+      return token
     end
 
     # Actually tag the token.
