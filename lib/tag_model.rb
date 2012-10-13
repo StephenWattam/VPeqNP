@@ -174,6 +174,30 @@ module VPNP
   end
 
 
+  class SimpleHybridModel < TagModel
+    def initialize(corpus, rules)
+      super(corpus)
+
+      @prob   = SimpleProbabalisticTagModel.new(@corpus)
+      @morph  = MorphologicalRuleTagModel.new(rules)
+    end
+
+    def estimates(token)
+      p_est = @prob.estimates(token)
+      m_est = @morph.estimates(token)
+      if p_est.length == 0 #|| p_est.values.inject(:+) == 0
+        return m_est
+      else
+      #elsif p_est.length != m_est.length
+        return p_est
+      #else
+       # ps = p_est.values.zip(m_est.values)
+        #ps = ps.each{|p, m| p*m}
+        #return Hash.new(p_est.keys.zip(ps))
+      end
+    end
+  end
+
 
   # Combines, logically, the taggers above in order to work
   # for tagged and untagged text with the maximum intelligence.
