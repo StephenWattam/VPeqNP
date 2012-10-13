@@ -199,10 +199,163 @@ module VPNP
   end
 
 
+  class GrammarRuleTagModel < TagModel
+    SEPARATOR = '.'
 
+    def initialize(rules = [])
+      @rules = rules
+    end
+
+    # Load rules from a file
+    #
+    # Rules should be of the form:
+    #
+    # ---
+    #  - rule one
+    #  - rule two
+    #  etc...
+    #
+    # i.e. stadard YML list.
+    def self.load(filename)
+      require 'yaml'
+      rules = YAML.load(File.read(filename)).map{|str|
+        parse_rule(str)
+      }
+      return GrammarRuleTagModel.new(rules)
+    end
+
+    # Applies rules to a given token
+    def estimates(token)
+      # Store types and a sum
+      types = {}
+      sum = 0
+
+      # Add one to the type the rule advocates
+      # if the rule matches.
+      @rules.each{|r|
+        type = apply_rule(r, token)
+        if type then
+          types[type] ||= 0
+          types[type]  += 1
+          sum          += 1
+        end
+      }
+
+      # Normalise
+      types.each{|t, w|
+        types[t] = types[t].to_f / sum
+      }
+
+      # return
+      return types
+    end
+
+
+    private
+
+    def apply_rule(rule, token)
+      # Offset, i.e. what position is the current token?
+      offset = rule[:placeholder].to_i
+
+      # Holds tokens around the area
+      context = []
+
+      # go through rules, applying offset and finding tokens
+      rule[:parts].each_index{ |i|
+        # puts "Looking up token: #{i}, 
+        #       #{rule[:parts][i]} = get_token_by_offset(#{i-offset}) = 
+        #       #{get_token_by_offset(token, i-offset)}"
+        t = get_token_by_offset(token, i-offset)
+        return nil if not t
+        context << t
+      }
+
+      # Iterate through the rule, comparing it.
+      rule[:parts].each_index{ |i|
+        # Load the token to compare and the rule to
+        # compare it against
+        cont = context[i]
+        part = rule[:parts][i]
+
+        # Unless this is the placeholder, match items
+        if i != rule[:placeholder] then
+          return nil if part[:word] and cont.word != part[:word]
+          return nil if part[:type] and cont.type != part[:type] 
+        end
+
+      }
+
+      # If we get here, the rule matches
+      # This means we can take the type out of the place-
+      # holder rule and send it back up to be weighted
+      return rule[:parts][rule[:placeholder]][:type] 
+    end
+
+    # FIXME: this is very ugly.
+    def get_token_by_offset(token, offset)
+      # offset = 0 means the token passed in
+      return token if offset == 0
+
+      # If greater than 0 go forwards
+      if offset > 0 then
+        while(offset > 0)
+          token = token.next
+          return nil if not token
+          offset -= 1
+        end
+
+      # else go backwards
+      else
+        while(offset < 0)
+          token = token.prev
+          return nil if not token
+          offset += 1
+        end
+      end
+
+      # return el token
+      return token
+    end
+
+    # 
+    def self.parse_rule(str)
+
+      # Array to hold the rule
+      rule = {:placeholder => nil, :parts => []}
+
+      # Parse each chunk
+      chunks = str.split
+      chunks.each{|c|
+        if c.count(SEPARATOR) > 2 then
+          raise "Invalid format: chunk '#{c}' has too many separators."
+        elsif c =~ /^#{Regexp.escape(SEPARATOR)}.+#{Regexp.escape(SEPARATOR)}$/ then
+          # placeholder (
+          raise "Invalid expression format: two placeholders in expression '#{str}'" if rule[:placeholder]
+          rule[:placeholder] = rule[:parts].length
+          rule[:parts] << {:type => c[1..-2]}
+        else
+
+          # Split around a dot.
+          parts = c.split(SEPARATOR)
+          matcher = {:word => (parts[0] == '') ? nil : parts[0],
+                     :type => parts[1] }
+
+          # And write the rule
+          rule[:parts] << matcher
+        end
+      }
+     
+      # Check one placeholder exists
+      raise "Invalid expression format: no placeholder in expression '#{str}'" if not rule[:placeholder]
+
+      # Return the rule
+      return rule
+    end
+  end
 
 
   class WeightedTagModel < TagModel
+    attr_reader :models
 
     # Models:
     #  {model => weight,
@@ -239,6 +392,7 @@ module VPNP
 
 
   class TrainedWeightTagModel < WeightedTagModel
+
     def initialize(*models)
 
       # Load the models into a hash with dummy weights
@@ -282,16 +436,30 @@ module VPNP
       return token
     end
 
+    # Returns the list of models
+    # with adjusted weights
+    def models
+      recompute_weights
+      @models
+    end
+
+    # 
     def estimates(token)
-      # compute weights from the training data
       # TODO: make an option to 'finalise' the weights and
       # precompute this.
-      @fits.each{|m, success|
-        @models[m] = success.to_f / @trained 
-      }
+      recompute_weights
 
       # once weights are set, allow the super to do its thing
       super(token)
+    end
+
+    private
+
+    def recompute_weights
+      # compute weights from the training data
+      @fits.each{|m, success|
+        @models[m] = success.to_f / @trained 
+      }
     end
   end
 

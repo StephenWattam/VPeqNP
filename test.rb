@@ -4,6 +4,9 @@ Dir.glob("./lib/*.rb").each{|x|
   require x
 }
 
+
+
+
 # output formatting
 out = VPNP::SimpleOutputFormatter.new()
 
@@ -17,7 +20,7 @@ tz = VPNP::RegexTokeniser.new(WORD_TAG_BROWN) # word tag word tag word tag
 # -----------------------------------------------------------------------------
 # Training
 #Build a corpus from the training data and tokeniser.
-ts = VPNP::DirTokenSource.new(brownsource, 11, -1, tz)
+ts = VPNP::DirTokenSource.new(brownsource, 11, 15, tz)
 c = VPNP::Corpus.new
 c.add_all(ts)
 
@@ -45,7 +48,8 @@ rules         =   { /.*ly$/ => 'adv',
                   }
 hybr          = VPNP::SimpleHybridModel.new(c,rules)
 weighted      = VPNP::WeightedTagModel.new( simple => 1, morph => 2 )
-trained       = VPNP::TrainedWeightTagModel.new( simple, hmm, morph )
+grammar       = VPNP::GrammarRuleTagModel.load('./testing/grammar_rules.yml')
+trained       = VPNP::TrainedWeightTagModel.new( simple, hmm, morph, grammar )
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -87,9 +91,14 @@ ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
 while(x = ts.next)
   trained.train(x)
 end
+trained.models.each{|m, w|
+  puts "Model: #{m} = #{w}"
+}
 ts.reset
 
 
+summary(ts, grammar)
+ts.reset
 summary(ts, simple)
 ts.reset
 summary(ts, hmm)
