@@ -66,14 +66,6 @@ module VPNP
 
   class MarkovTagModel < SimpleProbabalisticTagModel
 
-    # this is a fairly ugly workaround for calling
-    # a superclass' method named differently to the
-    # callee's.
-    #
-    # See http://stackoverflow.com/questions/1251178/calling-another-method-in-super-class-in-ruby
-    # for more info.
-    alias :bootstrap_simple_prob :estimates
-
     # Probability of seeing type x then type y
     def p_type_transition(from, to)
       # Number of times we have transitioned FROM this type
@@ -100,7 +92,7 @@ module VPNP
       # If the previous token is untyped then first
       # tag it with SimpleProbabalisticTagModel
       if not token.prev.type then
-        prob_types = bootstrap_simple_prob(token.prev)
+        prob_types = super(token.prev)
         if prob_types.length > 0 then
           # Assign maximally likely tag from simple probability checker
           token.prev.type = prob_types.keys[ prob_types.values.index( prob_types.values.max ) ]
@@ -114,39 +106,17 @@ module VPNP
       # work out the probability that the transition was made
       # puts "Previous tag: #{token.prev.type}" 
       transition_probabilities = {}
-      observed_transition_results   = @corpus.get_transitions(token.prev)
-      observed_transition_results.map{|type, count|
-        # puts "P(#{type}|#{token.prev.type}) == #{count}/marginal sum == #{p_type_transition(token.prev, type)}"
+      @corpus.get_transitions(token.prev).map{|type, count|
         transition_probabilities[type] = p_type_transition(token.prev, type) 
       }
-      # puts "--"
-
-      # Now add what we have naively guessed.
-      # If both agree, this should not be a problem, but occasionally
-      # we will see words for which we have no transition, but for which
-      # we do have prior knowledge.
-      #
-      # Technically, this is messing with the markov model,
-      # for now it's commented because of that.  Note that changing
-      # the constant will change the weight any 'non-transition' data gets
-      #
-      # XXX: this actually reduces result quality for now :-)
-      #
-      # @corpus.get_types(token).each{|type, count|
-      #   transition_probabilities[type] = 1 if not transition_probabilities[type]
-      # }
 
       # Now multiply each transition with the probability that the word
       # is natively of that type
-      
-
       types = {}
       transition_probabilities.each{|type, p|
         p = p_type(token, type)
         # puts "P[#{type}] = #{p}"
-        if p > 0 then
-          types[type] = transition_probabilities[type] * p
-        end
+        types[type] = transition_probabilities[type] * p if p > 0 
       }
 
       # return types
@@ -232,7 +202,7 @@ module VPNP
 
 
 
-  class WeightedCombinationTagModel < TagModel
+  class WeightedTagModel < TagModel
 
     # Models:
     #  {model => weight,
@@ -240,10 +210,12 @@ module VPNP
     def initialize(model_weights)
       # Load models
       @models = model_weights
-      
+          
       # Normalise weights to sum to 1
       max = @models.values.max
-      @models.each{ |m, w| @models[m] = w.to_f/max }
+      @models.each{ |m, w|
+        @models[m] = w.to_f/max 
+      }
     end
 
     # Compute estimates
@@ -252,17 +224,77 @@ module VPNP
 
       # Loop through models
       @models.each{|model, weight|
-
         # Each type for each model, 
         # add its weighted proportion to the list.
         model.estimates(token).each{ |type, p|
           types[type] ||= 0 
           types[type]  += ((p * weight) / @models.length)
         }
-
       }
 
       return types
     end
   end
+
+
+
+  class TrainedWeightTagModel < WeightedTagModel
+    def initialize(*models)
+
+      # Load the models into a hash with dummy weights
+      m = {}
+      models.each{|k, v| m[k] = 1.0 } 
+
+      # Pass to super
+      super(m)
+
+      # Seed a hash of accuracies to whittle down in
+      # training (=number correct)
+      @fits = {}
+      @models.each_key{|m|
+        @fits[m] = 0
+      }
+      @trained = 0
+    end
+
+    # Train the weights for a single token
+    #
+    # NB!: may be destructive to the token source
+    def train(token)
+      # Need an authoritative ground truth
+      raise "Cannot train on an untyped token" if not token.type
+
+      # Read the truth for later checks
+      truth = token.type
+
+      # For each model, run it and see if it was correct
+      @models.each_key{|m|
+        token.type = nil
+        m.estimate_type(token)
+        @fits[m] += 1 if token.type == truth
+      }
+
+      # Increment n
+      @trained += 1
+
+      # restore and return token
+      token.type = truth
+      return token
+    end
+
+    def estimates(token)
+      # compute weights from the training data
+      # TODO: make an option to 'finalise' the weights and
+      # precompute this.
+      @fits.each{|m, success|
+        @models[m] = success.to_f / @trained 
+      }
+
+      # once weights are set, allow the super to do its thing
+      super(token)
+    end
+  end
+
+
+
 end

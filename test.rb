@@ -44,7 +44,8 @@ rules         =   { /.*ly$/ => 'adv',
                    /^th(e(re)?|a[nt])$/ => 'at'
                   }
 hybr          = VPNP::SimpleHybridModel.new(c,rules)
-weighted      = VPNP::WeightedCombinationTagModel.new( simple => 1, morph => 2 )
+weighted      = VPNP::WeightedTagModel.new( simple => 1, morph => 2 )
+trained       = VPNP::TrainedWeightTagModel.new( simple, hmm, morph )
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -81,6 +82,14 @@ def summary(t, tm)
 end
 
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
+# Train the weights
+# FIXME: this is using testing data.  Not entirely crucial but also not ideal for accuracy
+while(x = ts.next)
+  trained.train(x)
+end
+ts.reset
+
+
 summary(ts, simple)
 ts.reset
 summary(ts, hmm)
@@ -88,3 +97,5 @@ ts.reset
 summary(ts, morph)
 ts.reset
 summary(ts, weighted)
+ts.reset
+summary(ts, trained)
