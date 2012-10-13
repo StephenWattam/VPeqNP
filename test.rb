@@ -17,13 +17,13 @@ tz = VPNP::RegexTokeniser.new(WORD_TAG_BROWN) # word tag word tag word tag
 # -----------------------------------------------------------------------------
 # Training
 #Build a corpus from the training data and tokeniser.
-ts = VPNP::DirTokenSource.new(brownsource, 11, -1, tz)
-c = VPNP::Corpus.new
-c.add_all(ts)
+#ts = VPNP::DirTokenSource.new(brownsource, 11, -1, tz)
+#c = VPNP::Corpus.new
+#c.add_all(ts)
 
 # Save or load the corpus for speed
-c.save("./testing/test_corpus")
-#c = VPNP::Corpus.load("./testing/test_corpus")
+#c.save("./testing/test_corpus")
+c = VPNP::Corpus.load("./testing/test_corpus")
 
 # -----------------------------------------------------------------------------
 # Create a new model
@@ -39,7 +39,8 @@ morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
 
 # -----------------------------------------------------------------------------
 # Testing
-# Note: The input source gets 'used up' by the tokensource - I couldn't see what caused this.
+# XXX: The input source gets 'used up' by the tokensource - I couldn't see what 
+# caused this to add a 'reset' in the TokenSource.
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
 puts "BEFF: #{beff.evaluate(ts).round(2)}%"
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)

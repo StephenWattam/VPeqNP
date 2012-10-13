@@ -19,7 +19,8 @@ module VPNP
       success, count  = 0, 0
       while(x = test.next)
         count += 1
-        success += 1 if x.type = self.estimates(x).values.max
+        types = self.estimates(x)
+        success += 1 if types.length > 0 && x.type == types.keys[types.values.index(types.values.max)]
       end
       return count > 0 ? (success.to_f/count)*100 : 0
     end
