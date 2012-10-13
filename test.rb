@@ -29,7 +29,6 @@ c.save("./testing/test_corpus")
 # Create a new model
 simple        = VPNP::SimpleProbabalisticTagModel.new (c)
 hmm           = VPNP::MarkovTagModel.new              (c)
-beff          = VPNP::BestEffortTagModel.new          (c)
 morph         = VPNP::MorphologicalRuleTagModel.load('./testing/test_rules.yml')
 # morph         = VPNP::MorphologicalRuleTagModel.new( { /.*ly$/ => 'adv',
 #                                                        /.*ing$/ => 'vb',
@@ -45,6 +44,7 @@ rules         =   { /.*ly$/ => 'adv',
                    /^th(e(re)?|a[nt])$/ => 'at'
                   }
 hybr          = VPNP::SimpleHybridModel.new(c,rules)
+weighted      = VPNP::WeightedCombinationTagModel.new( simple => 1, morph => 2 )
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -81,10 +81,10 @@ def summary(t, tm)
 end
 
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
-summary(ts, beff)
-ts.reset
 summary(ts, simple)
 ts.reset
 summary(ts, hmm)
 ts.reset
 summary(ts, morph)
+ts.reset
+summary(ts, weighted)

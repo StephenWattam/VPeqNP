@@ -66,6 +66,14 @@ module VPNP
 
   class MarkovTagModel < SimpleProbabalisticTagModel
 
+    # this is a fairly ugly workaround for calling
+    # a superclass' method named differently to the
+    # callee's.
+    #
+    # See http://stackoverflow.com/questions/1251178/calling-another-method-in-super-class-in-ruby
+    # for more info.
+    alias :bootstrap_simple_prob :estimates
+
     # Probability of seeing type x then type y
     def p_type_transition(from, to)
       # Number of times we have transitioned FROM this type
@@ -82,7 +90,25 @@ module VPNP
 
     # Estimate type using token transitions
     def estimates(token)
-      return {} if not (token.prev and token.prev.type)    # We require knowledge of the previous token's type.
+
+      # If this is the first token, fall back to 
+      # SimpleProbabalisticTagModel
+      if not token.prev then
+        return super(token)
+      end
+
+      # If the previous token is untyped then first
+      # tag it with SimpleProbabalisticTagModel
+      if not token.prev.type then
+        prob_types = bootstrap_simple_prob(token.prev)
+        if prob_types.length > 0 then
+          # Assign maximally likely tag from simple probability checker
+          token.prev.type = prob_types.keys[ prob_types.values.index( prob_types.values.max ) ]
+        else
+          # Give up
+          return {}
+        end
+      end
       
       # For each of the possible transitions from the previous tag,
       # work out the probability that the transition was made
@@ -91,7 +117,7 @@ module VPNP
       observed_transition_results   = @corpus.get_transitions(token.prev)
       observed_transition_results.map{|type, count|
         # puts "P(#{type}|#{token.prev.type}) == #{count}/marginal sum == #{p_type_transition(token.prev, type)}"
-        transition_probabilities[type] = p_type_transition(token.prev, type)
+        transition_probabilities[type] = p_type_transition(token.prev, type) 
       }
       # puts "--"
 
@@ -114,13 +140,17 @@ module VPNP
       # is natively of that type
       
 
-      #type_probabilities = {}
+      types = {}
       transition_probabilities.each{|type, p|
-        transition_probabilities[type] *= p_type(token, type)
-        # puts "P(#{type}|token.prev.type) *= #{p_type(token, type)} == #{transition_probabilities[type]}"
+        p = p_type(token, type)
+        # puts "P[#{type}] = #{p}"
+        if p > 0 then
+          types[type] = transition_probabilities[type] * p
+        end
       }
-      return transition_probabilities
 
+      # return types
+      return types
     end
   end
 
@@ -199,29 +229,40 @@ module VPNP
   end
 
 
-  # Combines, logically, the taggers above in order to work
-  # for tagged and untagged text with the maximum intelligence.
-  #
-  # This is, in effect, a happy workaround for the fact that
-  # transition-based models cannot work without some notion of
-  # text ordering (.prev/.next) and pure observation models suck.
-  class BestEffortTagModel < TagModel
-    def initialize(corpus) 
-      super(corpus)
 
-      # Create one of each of the semi-decent models
-      @prob   = SimpleProbabalisticTagModel.new(@corpus)
-      @hmm    = MarkovTagModel.new(@corpus)
+
+
+  class WeightedCombinationTagModel < TagModel
+
+    # Models:
+    #  {model => weight,
+    #   model => weight, ...}
+    def initialize(model_weights)
+      # Load models
+      @models = model_weights
+      
+      # Normalise weights to sum to 1
+      max = @models.values.max
+      @models.each{ |m, w| @models[m] = w.to_f/max }
     end
 
+    # Compute estimates
     def estimates(token)
-      if not token.prev or not token.prev.type then
-        @prob.estimates(token)
-      else
-        @hmm.estimates(token)
-      end
+      types = {}
+
+      # Loop through models
+      @models.each{|model, weight|
+
+        # Each type for each model, 
+        # add its weighted proportion to the list.
+        model.estimates(token).each{ |type, p|
+          types[type] ||= 0 
+          types[type]  += ((p * weight) / @models.length)
+        }
+
+      }
+
+      return types
     end
-
   end
-
 end
