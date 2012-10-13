@@ -10,12 +10,19 @@ module VPNP
     def initialize(sources, tokeniser)
       @sources        = (sources.is_a?(Array) ? sources : [sources])  # accept an array or a single item
       @tokeniser      = tokeniser
-      @buffer         = '' 
-      @current_file   = 0
-      @prev_token     = nil
+      reset
 
       # Check it's possible to actually work with the input...
       # @sources.map{|s| raise "Source #{s} is not of type IO." if not s.is_a? IO }
+    end
+
+    # Seeks to the first token, clears all buffers,
+    # and resets file pointers to the first item.
+    def reset
+      @buffer         = '' 
+      @current_file   = 0
+      @prev_token     = nil
+      @sources.map{|io| io.seek(0)}
     end
 
     # Returns the "next" token from the stream

@@ -82,9 +82,9 @@ end
 
 ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
 summary(ts, beff)
-ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
+ts.reset
 summary(ts, simple)
-ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
+ts.reset
 summary(ts, hmm)
-ts = VPNP::DirTokenSource.new(brownsource, 0, 10, tz)
+ts.reset
 summary(ts, morph)
