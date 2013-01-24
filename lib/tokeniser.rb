@@ -1,6 +1,10 @@
 require File.join(File.join(File.dirname(__FILE__), 'token.rb'))
 
 module VPNP
+  # Statelessly parses tokens from strings:
+  #
+  #  a) single tokens are parsed from a string
+  #  b) a meaningful segment is read from an io object
   class Tokeniser
     def first_token(string)
       # TODO: return first token
@@ -11,6 +15,8 @@ module VPNP
     end
   end
 
+  
+  # The token and segment formats are defined by regexps
   class RegexTokeniser < Tokeniser
     WORD_TAG_RX       = /(^|\n)?(?<start>)(?<word>\w+)\s+(?<tag>\w+)(?<end>)\s?(\n|$)/   # for word TYPE 
     WORD_RX           = /(?<start>)(?<word>[\w']+)(?<end>)/   # for words, no tag entry

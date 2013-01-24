@@ -3,6 +3,8 @@ require File.join(File.join(File.dirname(__FILE__), 'tokeniser.rb'))
 require 'stringio'
 
 module VPNP
+  # Statefully read from an io source, producing Tokens.
+  # Uses a Tokeniser to define what a token is, and how large readaheads should be.
   class TokenSource
     attr_reader :source
 

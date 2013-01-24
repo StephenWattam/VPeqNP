@@ -34,6 +34,30 @@ module VPNP
     end
   end
 
+  # If the model contained within this one returns nil,
+  # the original type is preserved.
+  #
+  # This is very useful for multi-pass models, which
+  # may wish to correct or build upon output from
+  # other passes, and thus retain the type if they 
+  # simply don't know.
+  class TypePreservingPassthroughModel < TagModel
+    def initialize(model)
+      @model = model
+    end
+
+    def estimates(token)
+      original_type = token.type
+      new_type = @model.estimates(token)
+      # puts "ORIGINAL: #{original_type} vs. #{new_type}"
+      return (new_type.count == 0) ? {original_type => 1} : new_type
+    end
+
+    def to_s
+      return "<TypePreservingPassthroughModel(#{@model})>"
+    end
+  end
+
 
   class SimpleProbabalisticTagModel < TagModel
     # Return the probability of observing the type that has actually been observed
@@ -199,6 +223,28 @@ module VPNP
   end
 
 
+  # Applies grammar rules to identify token types.
+  # Rules are written in a custom format, and may
+  # match words, types or combinations of the two.
+  #
+  # Rules take the form:
+  #
+  #  chunk chunk placeholder chunk chunk
+  #
+  # where chunk is one of:
+  #  word       --- to match a word
+  #  .type      --- matches any word with a given type
+  #  word.type  --- matches a given word with a given type
+  #
+  # and placeholder is:
+  #  .type.     --- the type given to the current token
+  #                 
+  # If all chunks match, then the placeholder type is assigned
+  # to the current token.
+  #
+  # Because of the matching system, this model works best as
+  # a second pass after another model has informed the text,
+  # otherwise any chunks after placeholder will be unassigned.
   class GrammarRuleTagModel < TagModel
     SEPARATOR = '.'
 

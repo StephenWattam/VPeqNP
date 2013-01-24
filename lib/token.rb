@@ -13,6 +13,12 @@ module VPNP
       @type     = type
     end
 
+    # Retrieve the next token in the stream,
+    # or nil if this is the last token.
+    #
+    # If the next item has not been read, @next will
+    # be a TokenSource object, and calling Token#next
+    # will automatically load it.
     def next
       if @next.is_a? TokenSource
         @next = @next.next
@@ -21,6 +27,8 @@ module VPNP
       @next
     end
 
+    # Access the stem of this token.
+    # TODO: currently simply removes case
     def lemma
       # TODO Return @string.stem
       @word.downcase
